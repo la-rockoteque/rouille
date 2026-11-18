@@ -21,6 +21,16 @@ const VOLATILE_ENV: &[&str] = &[
     "COLUMNS", "LINES", "SECURITYSESSIONID", "SSH_AUTH_SOCK", "TMUX_PANE",
 ];
 
+/// Prefixes of the bookkeeping variables that CI runners change on every step
+/// or job. `CI` itself is not one of them: tests often read it.
+const VOLATILE_ENV_PREFIXES: &[&str] = &[
+    "GITHUB_", "RUNNER_", "CI_", "BITBUCKET_", "BUILD_", "SYSTEM_", "AGENT_",
+];
+
+fn is_volatile(name: &str) -> bool {
+    VOLATILE_ENV.contains(&name) || VOLATILE_ENV_PREFIXES.iter().any(|p| name.starts_with(p))
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Entry {
     pub fingerprint: String,
@@ -76,7 +86,7 @@ pub fn fingerprint(target: &Target, filter: Option<&str>) -> String {
     h.update(&[0]);
 
     let env: BTreeMap<_, _> = std::env::vars_os()
-        .filter(|(k, _)| !VOLATILE_ENV.contains(&k.to_string_lossy().as_ref()))
+        .filter(|(k, _)| !is_volatile(&k.to_string_lossy()))
         .collect();
     for (k, v) in env {
         h.update(k.as_encoded_bytes());
@@ -105,4 +115,19 @@ pub fn fingerprint(target: &Target, filter: Option<&str>) -> String {
         h.update(&modified.to_le_bytes());
     }
     h.finalize().to_hex().to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ci_bookkeeping_is_volatile_but_ci_is_not() {
+        for name in ["GITHUB_ACTION", "GITHUB_OUTPUT", "RUNNER_TEMP", "CI_JOB_ID", "BUILD_BUILDID", "PWD"] {
+            assert!(is_volatile(name), "{name}");
+        }
+        for name in ["CI", "PATH", "DOTNET_ROOT", "ASPNETCORE_ENVIRONMENT", "CIPHER_KEY"] {
+            assert!(!is_volatile(name), "{name}");
+        }
+    }
 }

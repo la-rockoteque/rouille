@@ -32,7 +32,8 @@ impl Tree {
 pub fn names(paths: &[PathBuf], root: &Path) -> Vec<String> {
     let mut names: Vec<String> = paths
         .iter()
-        .map(|p| p.strip_prefix(root).unwrap_or(p).display().to_string())
+        // Forward slashes on every platform, so expected values read the same.
+        .map(|p| p.strip_prefix(root).unwrap_or(p).display().to_string().replace('\\', "/"))
         .collect();
     names.sort();
     names
