@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo.svg" alt="rouille logo: an isometric rusty key ring" width="200"></p>
+
 # rouille
 
 A fast .NET toolchain, written in Rust. The first command is `rouille test`.
