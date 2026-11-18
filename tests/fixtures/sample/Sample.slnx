@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="MsTests/MsTests.csproj" />
+  <Project Path="NunitMtpTests/NunitMtpTests.csproj" />
+  <Project Path="NunitTests/NunitTests.csproj" />
+  <Project Path="Shared/Shared.csproj" />
+  <Project Path="Xunit3Tests/Xunit3Tests.csproj" />
+  <Project Path="XunitTests/XunitTests.csproj" />
+</Solution>
