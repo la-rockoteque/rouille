@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Clippy
+        run: cargo clippy --all-targets --release -- -D warnings
+
+      - name: Unit tests
+        run: cargo test --release
+
+      - name: Fixtures pass
+        run: cargo run --release -- test tests/fixtures/sample --no-cache
+
+      - name: Fixtures are cached on the second run
+        shell: bash
+        run: |
+          out=$(cargo run -q --release -- test tests/fixtures/sample)
+          echo "$out"
+          echo "$out" | grep -q "Fresh"
+          echo "$out" | grep -q "(5 cached)"
+
+      - name: Fixtures report failures
+        shell: bash
+        env:
+          ROUILLE_FIXTURE_FAIL: "1"
+        run: |
+          set +e
+          cargo run -q --release -- test tests/fixtures/sample --no-build
+          code=$?
+          set -e
+          echo "exit code: $code"
+          test "$code" -eq 1
